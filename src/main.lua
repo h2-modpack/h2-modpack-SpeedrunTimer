@@ -1,7 +1,3 @@
--- =============================================================================
--- BOILERPLATE (do not modify)
--- =============================================================================
-
 local mods = rom.mods
 mods['SGG_Modding-ENVY'].auto()
 
@@ -12,32 +8,12 @@ game = rom.game
 modutil = mods['SGG_Modding-ModUtil']
 chalk = mods['SGG_Modding-Chalk']
 reload = mods['SGG_Modding-ReLoad']
+local lib = mods['adamant-Modpack_Lib'].public
 
 config = chalk.auto('config.lua')
 public.config = config
 
-local NIL = {}
-local backups = {}
-
-local function backup(tbl, key)
-    if not backups[tbl] then backups[tbl] = {} end
-    if backups[tbl][key] == nil then
-        local v = tbl[key]
-        backups[tbl][key] = v == nil and NIL or (type(v) == "table" and DeepCopyTable(v) or v)
-    end
-end
-
-local function restore()
-    for tbl, keys in pairs(backups) do
-        for key, v in pairs(keys) do
-            tbl[key] = v == NIL and nil or (type(v) == "table" and DeepCopyTable(v) or v)
-        end
-    end
-end
-
-local function isEnabled()
-    return config.Enabled
-end
+local backup, restore = lib.createBackupSystem()
 
 -- =============================================================================
 -- MODULE DEFINITION
@@ -50,6 +26,7 @@ public.definition = {
     group    = "QoL",
     tooltip  = "Displays RTA and load-removed timers on screen during runs.",
     default  = false,
+    dataMutation = false,
 }
 
 -- =============================================================================
@@ -220,14 +197,9 @@ end
 local function apply()
 end
 
-local function disable()
-    restore()
-end
-
 local function registerHooks()
-    -- Start a fresh timer at the beginning of each run
     modutil.mod.Path.Wrap("StartNewRun", function(baseFunc, prevRun, args)
-        if not isEnabled() then return baseFunc(prevRun, args) end
+        if not config.Enabled then return baseFunc(prevRun, args) end
         if activeTimer then
             StopAndCleanup()
         end
@@ -235,21 +207,19 @@ local function registerHooks()
         return baseFunc(prevRun, args)
     end)
 
-    -- Start timing and spawn update thread when the player materializes
     modutil.mod.Path.Wrap("RoomEntranceMaterialize", function(baseFunc, ...)
-        if not isEnabled() then return baseFunc(...) end
+        if not config.Enabled then return baseFunc(...) end
         local val = baseFunc(...)
 
         if activeTimer and not activeTimer.Running then
             activeTimer:start()
         end
 
-        -- Spawn update thread if not already active
         if activeTimer and activeTimer.Running and not updateThreadActive then
             updateThreadActive = true
             thread(function()
                 while activeTimer and activeTimer.Running do
-                    if not isEnabled() then
+                    if not config.Enabled then
                         StopAndCleanup()
                         return
                     end
@@ -265,19 +235,17 @@ local function registerHooks()
         return val
     end)
 
-    -- Stop timer when Chronos is defeated (keep display visible)
     modutil.mod.Path.Wrap("ChronosKillPresentation", function(baseFunc, ...)
-        if not isEnabled() then return baseFunc(...) end
+        if not config.Enabled then return baseFunc(...) end
         if activeTimer then
             activeTimer:stop()
         end
         return baseFunc(...)
     end)
 
-    -- Track load screens for LRT calculation
     modutil.mod.Path.Wrap("AddTimerBlock", function(baseFunc, currRun, timerBlockName)
         local val = baseFunc(currRun, timerBlockName)
-        if isEnabled() and timerBlockName == "MapLoad" and activeTimer and activeTimer.Running then
+        if config.Enabled and timerBlockName == "MapLoad" and activeTimer and activeTimer.Running then
             activeTimer.LrtTimer:processLoadEvent(true)
         end
         return val
@@ -285,7 +253,7 @@ local function registerHooks()
 
     modutil.mod.Path.Wrap("RemoveTimerBlock", function(baseFunc, currRun, timerBlockName)
         local val = baseFunc(currRun, timerBlockName)
-        if isEnabled() and timerBlockName == "MapLoad" and activeTimer and activeTimer.Running then
+        if config.Enabled and timerBlockName == "MapLoad" and activeTimer and activeTimer.Running then
             activeTimer.LrtTimer:processLoadEvent(false)
         end
         return val
@@ -293,18 +261,12 @@ local function registerHooks()
 end
 
 -- =============================================================================
--- PUBLIC API (do not modify)
+-- PUBLIC API
 -- =============================================================================
 
-public.definition.enable = function()
-    apply()
-end
+public.definition.enable = apply
+public.definition.disable = restore
 
-public.definition.disable = function()
-    disable()
-end
-
--- Expose timer data for external consumers
 public.getRealTime = function()
     if activeTimer then return FormatTimestamp(activeTimer:getRealTime()) end
     return "00:00.00"
@@ -321,7 +283,7 @@ public.getInGameTime = function()
 end
 
 -- =============================================================================
--- LIFECYCLE (do not modify)
+-- Wiring
 -- =============================================================================
 
 local loader = reload.auto_single()
@@ -333,23 +295,5 @@ modutil.once_loaded.game(function()
         if config.Enabled then apply() end
     end)
 end)
--- =============================================================================
--- STANDALONE UI (do not modify)
--- =============================================================================
--- When adamant-core is NOT installed, renders a minimal ImGui toggle.
--- When adamant-core IS installed, the core handles UI — this is skipped.
 
-rom.gui.add_to_menu_bar(function()
-    if mods['adamant-Core'] then return end
-    if rom.ImGui.BeginMenu("adamant") then
-        local val, chg = rom.ImGui.Checkbox(public.definition.name, config.Enabled)
-        if chg then
-            config.Enabled = val
-            if val then apply() else disable() end
-        end
-        if rom.ImGui.IsItemHovered() and public.definition.tooltip ~= "" then
-            rom.ImGui.SetTooltip(public.definition.tooltip)
-        end
-        rom.ImGui.EndMenu()
-    end
-end)
+lib.standaloneUI(public.definition, config, apply, restore)
