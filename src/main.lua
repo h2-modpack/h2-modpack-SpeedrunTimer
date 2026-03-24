@@ -134,7 +134,7 @@ local function CreateOverlayLine(anchorName, text, kwargs)
             Color = kwargs.color or textFormat.Color,
         })
     else
-        ScreenAnchors[anchorName] = CreateScreenObstacle({ --luacheck: ignore 443
+        ScreenAnchors[anchorName] = CreateScreenObstacle({
             Name = "BlankObstacle",
             X = x_pos, Y = y_pos,
             Group = "Combat_Menu_TraitTray_Overlay",
