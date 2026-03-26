@@ -20,14 +20,14 @@ local _, revert = lib.createBackupSystem()
 -- =============================================================================
 
 public.definition = {
-    id       = "SpeedrunTimer",
-    name     = "Speedrun Timer",
-    category = "QoL",
-    group    = "QoL",
-    tooltip  = "Displays RTA and load-removed timers on screen during runs.",
-    default  = false,
+    id           = "SpeedrunTimer",
+    name         = "Speedrun Timer",
+    category     = "QoL",
+    group        = "QoL",
+    tooltip      = "Displays RTA and load-removed timers on screen during runs.",
+    default      = false,
     dataMutation = false,
-    modpack = "h2-modpack",
+    modpack      = "h2-modpack",
 }
 
 -- =============================================================================
@@ -136,7 +136,8 @@ local function CreateOverlayLine(anchorName, text, kwargs)
     else
         ScreenAnchors[anchorName] = CreateScreenObstacle({
             Name = "BlankObstacle",
-            X = x_pos, Y = y_pos,
+            X = x_pos,
+            Y = y_pos,
             Group = "Combat_Menu_TraitTray_Overlay",
         })
         CreateTextBox(MergeTables(textFormat, {
@@ -145,7 +146,8 @@ local function CreateOverlayLine(anchorName, text, kwargs)
         }))
         ModifyTextBox({
             Id = ScreenAnchors[anchorName],
-            FadeTarget = 1, FadeDuration = 0.0,
+            FadeTarget = 1,
+            FadeDuration = 0.0,
         })
     end
 end
@@ -246,7 +248,9 @@ local function registerHooks()
 
     modutil.mod.Path.Wrap("AddTimerBlock", function(baseFunc, currRun, timerBlockName)
         local val = baseFunc(currRun, timerBlockName)
-        if lib.isEnabled(config, public.definition.modpack) and timerBlockName == "MapLoad" and activeTimer and activeTimer.Running then
+        if lib.isEnabled(config, public.definition.modpack) and timerBlockName == "MapLoad"
+                and activeTimer and activeTimer.Running then
+
             activeTimer.LrtTimer:processLoadEvent(true)
         end
         return val
@@ -254,7 +258,9 @@ local function registerHooks()
 
     modutil.mod.Path.Wrap("RemoveTimerBlock", function(baseFunc, currRun, timerBlockName)
         local val = baseFunc(currRun, timerBlockName)
-        if lib.isEnabled(config, public.definition.modpack) and timerBlockName == "MapLoad" and activeTimer and activeTimer.Running then
+        if lib.isEnabled(config, public.definition.modpack) and timerBlockName == "MapLoad"
+                and activeTimer and activeTimer.Running then
+
             activeTimer.LrtTimer:processLoadEvent(false)
         end
         return val
