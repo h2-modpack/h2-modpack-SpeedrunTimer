@@ -4,10 +4,10 @@ schemaVersion = "0.0.1"
 
 [package]
 namespace = "adamant"
-name = "SpeedrunTimer"
+name = "Speedrun_Timer"
 versionNumber = "1.0.0"
 description = "Displays RTA and load-removed timers on screen during runs."
-websiteUrl = "https://github.com/h2-modpack/h2-modpack-SpeedrunTimer"
+websiteUrl = "https://github.com/h2pack-speedrun/adamant-Speedrun_Timer"
 containsNsfwContent = false
 
 [package.dependencies]
