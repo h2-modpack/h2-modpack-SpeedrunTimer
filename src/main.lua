@@ -1,6 +1,7 @@
 local mods = rom.mods
 mods['SGG_Modding-ENVY'].auto()
 
+---@type AdamantModpackLib
 lib = mods['adamant-ModpackLib']
 modutil = mods['SGG_Modding-ModUtil']
 local chalk = mods['SGG_Modding-Chalk']
@@ -8,7 +9,15 @@ local reload = mods['SGG_Modding-ReLoad']
 local dataDefaults = import("config.lua")
 local config = chalk.auto('config.lua')
 
+---@class SpeedrunTimerInternal
+---@field store ManagedStore|nil
+---@field standaloneUi StandaloneRuntime|nil
+---@field RegisterHooks fun()|nil
+---@field DrawTab fun(imgui: table, session: AuthorSession)|nil
+---@field DrawQuickContent fun(imgui: table, session: AuthorSession)|nil
+---@field RegisterPublicApi fun()|nil
 SpeedrunTimerInternal = SpeedrunTimerInternal or {}
+---@type SpeedrunTimerInternal
 local internal = SpeedrunTimerInternal
 
 public.definition = {
