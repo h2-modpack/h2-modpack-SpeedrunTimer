@@ -1,16 +1,28 @@
 # Speedrun Timer
 
-> Displays Real-Time Attack (RTA) and Load-Removed Time (LRT) timers on screen during runs.
+> On-screen timers for live run timing.
 
 Part of the [Speedrun modpack](https://github.com/h2pack-speedrun/speedrun-modpack).
+
+## What It Does
+
+Speedrun Timer displays timing overlays during runs so you can track attempt pace without leaving the game.
+
+The live timer stack includes:
+
+- `RTA`
+  Real-Time Attack, based on wall-clock time.
+- `LRT`
+  Load-Removed Time, which subtracts load time from the run timer.
+- `IGT`
+  In-Game Time support through the engine timer layer.
+
+In normal use, the module draws the active run timers on screen and keeps the load-removed timer in sync with map-load timer blocks.
+
+Use it when you want a built-in speedrun timing overlay instead of relying on external timing alone.
 
 ## Installation
 
 Install via [r2modman](https://thunderstore.io/c/hades-ii/) or manually place in your `ReturnOfModding/plugins` folder.
 
-## Shared Docs
-
-- [ModpackLib README.md](https://github.com/h2-modpack/adamant-ModpackLib/blob/main/README.md)
-  Module contract, storage/UI authoring, and standalone helpers.
-- [ModpackFramework README.md](https://github.com/h2-modpack/adamant-ModpackFramework/blob/main/README.md)
-  Coordinator/discovery contract, Quick Setup, and hash/profile behavior.
+This module is usually installed as part of the full [Speedrun modpack](https://github.com/h2pack-speedrun/speedrun-modpack), where it appears in the shared Speedrun UI with the other speedrun-focused modules.
