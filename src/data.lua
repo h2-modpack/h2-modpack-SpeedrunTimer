@@ -1,6 +1,8 @@
 local internal = SpeedrunTimerInternal
 
-public.definition.storage = {}
+function internal.BuildStorage()
+    return {}
+end
 
 import("timer/RtaTimer.lua")
 import("timer/LrtTimer.lua")

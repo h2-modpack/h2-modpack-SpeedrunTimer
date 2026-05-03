@@ -1,17 +1,28 @@
 local mods = rom.mods
 mods['SGG_Modding-ENVY'].auto()
 
+---@diagnostic disable: lowercase-global
+rom = rom
+_PLUGIN = _PLUGIN
+game = rom.game
+modutil = mods['SGG_Modding-ModUtil']
+---@module "adamant-ModpackLib"
 ---@type AdamantModpackLib
 lib = mods['adamant-ModpackLib']
-modutil = mods['SGG_Modding-ModUtil']
 local chalk = mods['SGG_Modding-Chalk']
 local reload = mods['SGG_Modding-ReLoad']
 local dataDefaults = import("config.lua")
 local config = chalk.auto('config.lua')
 
+local PACK_ID = "speedrun"
+local MODULE_ID = "SpeedrunTimer"
+
 ---@class SpeedrunTimerInternal
 ---@field store ManagedStore|nil
 ---@field standaloneUi StandaloneRuntime|nil
+---@field PACK_ID string|nil
+---@field MODULE_ID string|nil
+---@field BuildStorage fun(): StorageSchema|nil
 ---@field RegisterHooks fun()|nil
 ---@field DrawTab fun(imgui: table, session: AuthorSession)|nil
 ---@field DrawQuickContent fun(imgui: table, session: AuthorSession)|nil
@@ -20,21 +31,26 @@ SpeedrunTimerInternal = SpeedrunTimerInternal or {}
 ---@type SpeedrunTimerInternal
 local internal = SpeedrunTimerInternal
 
-public.definition = {
-    id             = "SpeedrunTimer",
-    name           = "Speedrun Timer",
-    tooltip        = "Displays RTA and load-removed timers on screen during runs.",
-    default        = dataDefaults.Enabled,
-    affectsRunData = false,
-    modpack        = "speedrun",
-}
+internal.PACK_ID = PACK_ID
+internal.MODULE_ID = MODULE_ID
 
-public.host = nil
-local store
-local session
 internal.standaloneUi = nil
 
 local loader = reload.auto_single()
+
+local function registerGui()
+    rom.gui.add_imgui(function()
+        if internal.standaloneUi and internal.standaloneUi.renderWindow then
+            internal.standaloneUi.renderWindow()
+        end
+    end)
+
+    rom.gui.add_to_menu_bar(function()
+        if internal.standaloneUi and internal.standaloneUi.addMenuBar then
+            internal.standaloneUi.addMenuBar()
+        end
+    end)
+end
 
 local function init()
     import_as_fallback(rom.game)
@@ -42,39 +58,35 @@ local function init()
     import("logic.lua")
     import("ui.lua")
 
-    store, session = lib.createStore(config, public.definition, dataDefaults)
+    local definition = lib.prepareDefinition(internal, dataDefaults, {
+        id = MODULE_ID,
+        name = "Speedrun Timer",
+        tooltip = "Displays RTA and load-removed timers on screen during runs.",
+        default = dataDefaults.Enabled,
+        affectsRunData = false,
+        modpack = PACK_ID,
+        storage = internal.BuildStorage(),
+    })
+
+    local store, session = lib.createStore(config, definition)
     internal.store = store
 
     if internal.RegisterPublicApi then
         internal.RegisterPublicApi()
     end
 
-    public.host = lib.createModuleHost({
-        definition = public.definition,
+    lib.createModuleHost({
+        definition = definition,
         store = store,
         session = session,
         hookOwner = internal,
         registerHooks = internal.RegisterHooks,
         drawTab = internal.DrawTab,
-        -- drawQuickContent = internal.DrawQuickContent,
+        drawQuickContent = internal.DrawQuickContent,
     })
-    internal.standaloneUi = lib.standaloneHost(public.host)
+    internal.standaloneUi = lib.standaloneHost()
 end
 
 modutil.once_loaded.game(function()
-    loader.load(nil, init)
-end)
-
----@diagnostic disable-next-line: redundant-parameter
-rom.gui.add_imgui(function()
-    if internal.standaloneUi and internal.standaloneUi.renderWindow then
-        internal.standaloneUi.renderWindow()
-    end
-end)
-
----@diagnostic disable-next-line: redundant-parameter
-rom.gui.add_to_menu_bar(function()
-    if internal.standaloneUi and internal.standaloneUi.addMenuBar then
-        internal.standaloneUi.addMenuBar()
-    end
+    loader.load(registerGui, init)
 end)
